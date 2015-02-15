@@ -2818,6 +2818,25 @@ ZEND_METHOD(reflection_typeannotation, isInstance)
 }
 /* }}} */
 
+/* {{{ proto public bool ReflectionTypeAnnotation::isScalar()
+  Returns whether parameter MUST be scalar */
+ZEND_METHOD(reflection_typeannotation, isScalar)
+{
+	reflection_object *intern;
+	typeannotation_reference *param;
+
+	if (zend_parse_parameters_none() == FAILURE) {
+		return;
+	}
+	GET_REFLECTION_OBJECT_PTR(param);
+
+	RETVAL_BOOL(param->arg_info->type_hint == IS_STRING ||
+		param->arg_info->type_hint == _IS_BOOL ||
+		param->arg_info->type_hint == IS_LONG ||
+		param->arg_info->type_hint == IS_DOUBLE);
+}
+/* }}} */
+
 /* {{{ proto public string ReflectionTypeAnnotation::__toString()
    Return the text of the type annotation */
 ZEND_METHOD(reflection_typeannotation, __toString)
@@ -2834,6 +2853,10 @@ ZEND_METHOD(reflection_typeannotation, __toString)
 		case IS_ARRAY:    RETURN_STRINGL("array", sizeof("array") - 1);
 		case IS_CALLABLE: RETURN_STRINGL("callable", sizeof("callable") - 1);
 		case IS_OBJECT:   RETURN_STR(zend_string_copy(param->arg_info->class_name));
+		case IS_STRING:   RETURN_STRINGL("string", sizeof("string") - 1);
+		case _IS_BOOL:    RETURN_STRINGL("bool", sizeof("bool") - 1);
+		case IS_LONG:     RETURN_STRINGL("int", sizeof("int") - 1);
+		case IS_DOUBLE:   RETURN_STRINGL("float", sizeof("float") - 1);
 		default:
 			php_error_docref(NULL, E_ERROR, "Unknown type annotation: %d", (int)param->arg_info->type_hint);
 			RETURN_EMPTY_STRING();
@@ -6251,6 +6274,7 @@ static const zend_function_entry reflection_typeannotation_functions[] = {
 	ZEND_ME(reflection_typeannotation, isCallable, arginfo_reflection__void, 0)
 	ZEND_ME(reflection_typeannotation, isNullable, arginfo_reflection__void, 0)
 	ZEND_ME(reflection_typeannotation, isInstance, arginfo_reflection__void, 0)
+	ZEND_ME(reflection_typeannotation, isScalar, arginfo_reflection__void, 0)
 	ZEND_ME(reflection_typeannotation, __toString, arginfo_reflection__void, 0)
 	PHP_FE_END
 };
