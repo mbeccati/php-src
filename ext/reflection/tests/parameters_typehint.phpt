@@ -1,5 +1,5 @@
 --TEST--
-ReflectionParameter::hasTypeAnnotation() / getTypeAnnotation()
+ReflectionParameter::hasTypeHint() / getTypeHint()
 --FILE--
 <?php
 function foo(stdClass $a, array $b, callable $c, stdClass $d = null, $e = null, string $f, bool $g, int $h, float $i) { }
@@ -11,8 +11,8 @@ class c { function bar(): int { return 1; } }
 $rf = new ReflectionFunction('foo');
 foreach ($rf->getParameters() as $idx => $rp) {
   echo "** Parameter $idx\n";
-  var_dump($rp->hasTypeAnnotation());
-  $ra = $rp->getTypeAnnotation();
+  var_dump($rp->hasTypeHint());
+  $ra = $rp->getTypeHint();
   if ($ra) {
     var_dump($ra->isArray());
     var_dump($ra->isCallable());
@@ -24,8 +24,8 @@ foreach ($rf->getParameters() as $idx => $rp) {
 }
 foreach (array($rf, new ReflectionFunction('bar'), new ReflectionMethod('c', 'bar')) as $idx => $rf) {
   echo "** Function/method return type $idx\n";
-  var_dump($rf->hasReturnTypeAnnotation());
-  $ra = $rf->getReturnTypeAnnotation();
+  var_dump($rf->hasReturnTypeHint());
+  $ra = $rf->getReturnTypeHint();
   if ($ra) {
     var_dump($ra->isArray());
     var_dump($ra->isCallable());
