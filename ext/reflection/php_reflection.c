@@ -2857,9 +2857,7 @@ ZEND_METHOD(reflection_typehint, __toString)
 		case _IS_BOOL:    RETURN_STRINGL("bool", sizeof("bool") - 1);
 		case IS_LONG:     RETURN_STRINGL("int", sizeof("int") - 1);
 		case IS_DOUBLE:   RETURN_STRINGL("float", sizeof("float") - 1);
-		default:
-			php_error_docref(NULL, E_ERROR, "Unknown type hint: %d", (int)param->arg_info->type_hint);
-			RETURN_EMPTY_STRING();
+		EMPTY_SWITCH_DEFAULT_CASE()
 	}
 }
 /* }}} */
