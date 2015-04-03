@@ -202,6 +202,7 @@ typedef struct _parameter_reference {
 /* Struct for type hints */
 typedef struct _typehint_reference {
 	struct _zend_arg_info *arg_info;
+	zend_function *fptr;
 } typehint_reference;
 
 typedef enum {
@@ -1251,6 +1252,7 @@ static void reflection_typehint_factory(zend_function *fptr, zval *closure_objec
 	intern = Z_REFLECTION_P(object);
 	reference = (typehint_reference*) emalloc(sizeof(typehint_reference));
 	reference->arg_info = arg_info;
+	reference->fptr = fptr;
 	intern->ptr = reference;
 	intern->ref_type = REF_TYPE_HINT;
 	intern->ce = fptr->common.scope;
@@ -2494,7 +2496,9 @@ ZEND_METHOD(reflection_parameter, hasTypeHint)
 	}
 	GET_REFLECTION_OBJECT_PTR(param);
 
-	RETVAL_BOOL(param->arg_info->type_hint != 0);
+	RETVAL_BOOL((param->fptr->type == ZEND_INTERNAL_FUNCTION ?
+		((zend_internal_arg_info*)param->arg_info)->type_hint :
+		param->arg_info->type_hint) != 0);
 }
 /* }}} */
 
@@ -2510,7 +2514,10 @@ ZEND_METHOD(reflection_parameter, getTypeHint)
 	}
 	GET_REFLECTION_OBJECT_PTR(param);
 
-	if (!param->arg_info->type_hint) {
+	if ((param->fptr->type == ZEND_INTERNAL_FUNCTION ?
+		((zend_internal_arg_info*)param->arg_info)->type_hint :
+		param->arg_info->type_hint) == 0)
+	{
 		RETURN_NULL();
 	}
 	reflection_typehint_factory(param->fptr, Z_ISUNDEF(intern->obj)? NULL : &intern->obj, param->arg_info, return_value);
@@ -2852,7 +2859,11 @@ ZEND_METHOD(reflection_typehint, __toString)
 	switch (param->arg_info->type_hint) {
 		case IS_ARRAY:    RETURN_STRINGL("array", sizeof("array") - 1);
 		case IS_CALLABLE: RETURN_STRINGL("callable", sizeof("callable") - 1);
-		case IS_OBJECT:   RETURN_STR(zend_string_copy(param->arg_info->class_name));
+		case IS_OBJECT:
+			if (param->fptr->type == ZEND_INTERNAL_FUNCTION) {
+				RETURN_STRING(((zend_internal_arg_info*)param->arg_info)->class_name);
+			}
+			RETURN_STR(zend_string_copy(param->arg_info->class_name));
 		case IS_STRING:   RETURN_STRINGL("string", sizeof("string") - 1);
 		case _IS_BOOL:    RETURN_STRINGL("bool", sizeof("bool") - 1);
 		case IS_LONG:     RETURN_STRINGL("int", sizeof("int") - 1);

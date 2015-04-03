@@ -8,6 +8,8 @@ function bar(): stdClass { return new stdClass; }
 
 class c { function bar(): int { return 1; } }
 
+echo "*** function foo\n";
+
 $rf = new ReflectionFunction('foo');
 foreach ($rf->getParameters() as $idx => $rp) {
   echo "** Parameter $idx\n";
@@ -22,6 +24,26 @@ foreach ($rf->getParameters() as $idx => $rp) {
     var_dump((string)$ra);
   }
 }
+
+echo "\n*** method SplObserver::update\n";
+
+$rf = new ReflectionMethod('SplObserver', 'update');
+foreach ($rf->getParameters() as $idx => $rp) {
+  echo "** Parameter $idx\n";
+  var_dump($rp->hasTypeHint());
+  $ra = $rp->getTypeHint();
+  if ($ra) {
+    var_dump($ra->isArray());
+    var_dump($ra->isCallable());
+    var_dump($ra->isNullable());
+    var_dump($ra->isInstance());
+    var_dump($ra->isScalar());
+    var_dump((string)$ra);
+  }
+}
+
+echo "\n*** return types\n";
+
 foreach (array($rf, new ReflectionFunction('bar'), new ReflectionMethod('c', 'bar')) as $idx => $rf) {
   echo "** Function/method return type $idx\n";
   var_dump($rf->hasReturnTypeHint());
@@ -36,6 +58,7 @@ foreach (array($rf, new ReflectionFunction('bar'), new ReflectionMethod('c', 'ba
   }
 }
 --EXPECT--
+*** function foo
 ** Parameter 0
 bool(true)
 bool(false)
@@ -102,6 +125,18 @@ bool(false)
 bool(false)
 bool(true)
 string(5) "float"
+
+*** method SplObserver::update
+** Parameter 0
+bool(true)
+bool(false)
+bool(false)
+bool(false)
+bool(true)
+bool(false)
+string(10) "SplSubject"
+
+*** return types
 ** Function/method return type 0
 bool(false)
 ** Function/method return type 1
