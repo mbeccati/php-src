@@ -6,7 +6,11 @@ function foo(stdClass $a, array $b, callable $c, stdClass $d = null, $e = null, 
 
 function bar(): stdClass { return new stdClass; }
 
-class c { function bar(): int { return 1; } }
+class c extends stdClass {
+  function bar(): int { return 1; }
+  function factory(): self { return new c; }
+  function pfactory(): parent { return new stdClass; }
+}
 
 echo "*** function foo\n";
 
@@ -38,7 +42,13 @@ foreach ($rf->getParameters() as $idx => $rp) {
 
 echo "\n*** return types\n";
 
-foreach (array($rf, new ReflectionFunction('bar'), new ReflectionMethod('c', 'bar')) as $idx => $rf) {
+foreach ([
+  $rf,
+  new ReflectionFunction('bar'),
+  new ReflectionMethod('c', 'bar'),
+  new ReflectionMethod('c', 'factory'),
+  new ReflectionMethod('c', 'pfactory'),
+] as $idx => $rf) {
   echo "** Function/method return type $idx\n";
   var_dump($rf->hasReturnType());
   $ra = $rf->getReturnType();
@@ -113,3 +123,13 @@ bool(true)
 bool(false)
 bool(false)
 string(3) "int"
+** Function/method return type 3
+bool(true)
+bool(false)
+bool(true)
+string(4) "self"
+** Function/method return type 4
+bool(true)
+bool(false)
+bool(true)
+string(6) "parent"
