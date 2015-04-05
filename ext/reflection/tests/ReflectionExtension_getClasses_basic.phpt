@@ -40,10 +40,10 @@ array(13) {
     ["name"]=>
     string(19) "ReflectionParameter"
   }
-  ["ReflectionTypeHint"]=>
+  ["ReflectionType"]=>
   object(ReflectionClass)#8 (1) {
     ["name"]=>
-    string(18) "ReflectionTypeHint"
+    string(14) "ReflectionType"
   }
   ["ReflectionMethod"]=>
   object(ReflectionClass)#9 (1) {

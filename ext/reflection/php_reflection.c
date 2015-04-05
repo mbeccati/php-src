@@ -56,7 +56,7 @@ PHPAPI zend_class_entry *reflection_ptr;
 PHPAPI zend_class_entry *reflection_function_abstract_ptr;
 PHPAPI zend_class_entry *reflection_function_ptr;
 PHPAPI zend_class_entry *reflection_parameter_ptr;
-PHPAPI zend_class_entry *reflection_typehint_ptr;
+PHPAPI zend_class_entry *reflection_type_ptr;
 PHPAPI zend_class_entry *reflection_class_ptr;
 PHPAPI zend_class_entry *reflection_object_ptr;
 PHPAPI zend_class_entry *reflection_method_ptr;
@@ -200,16 +200,16 @@ typedef struct _parameter_reference {
 } parameter_reference;
 
 /* Struct for type hints */
-typedef struct _typehint_reference {
+typedef struct _type_reference {
 	struct _zend_arg_info *arg_info;
 	zend_function *fptr;
-} typehint_reference;
+} type_reference;
 
 typedef enum {
 	REF_TYPE_OTHER,      /* Must be 0 */
 	REF_TYPE_FUNCTION,
 	REF_TYPE_PARAMETER,
-	REF_TYPE_HINT,
+	REF_TYPE_TYPE,
 	REF_TYPE_PROPERTY,
 	REF_TYPE_DYNAMIC_PROPERTY
 } reflection_type_t;
@@ -312,7 +312,7 @@ static void reflection_free_objects_storage(zend_object *object) /* {{{ */
 			reference = (parameter_reference*)intern->ptr;
 			_free_function(reference->fptr);
 			/* fallthrough */
-		case REF_TYPE_HINT:
+		case REF_TYPE_TYPE:
 			efree(intern->ptr);
 			break;
 		case REF_TYPE_FUNCTION:
@@ -1242,19 +1242,19 @@ static void reflection_parameter_factory(zend_function *fptr, zval *closure_obje
 }
 /* }}} */
 
-/* {{{ reflection_typehint_factory */
-static void reflection_typehint_factory(zend_function *fptr, zval *closure_object, struct _zend_arg_info *arg_info, zval *object)
+/* {{{ reflection_type_factory */
+static void reflection_type_factory(zend_function *fptr, zval *closure_object, struct _zend_arg_info *arg_info, zval *object)
 {
 	reflection_object *intern;
-	typehint_reference *reference;
+	type_reference *reference;
 
-	reflection_instantiate(reflection_typehint_ptr, object);
+	reflection_instantiate(reflection_type_ptr, object);
 	intern = Z_REFLECTION_P(object);
-	reference = (typehint_reference*) emalloc(sizeof(typehint_reference));
+	reference = (type_reference*) emalloc(sizeof(type_reference));
 	reference->arg_info = arg_info;
 	reference->fptr = fptr;
 	intern->ptr = reference;
-	intern->ref_type = REF_TYPE_HINT;
+	intern->ref_type = REF_TYPE_TYPE;
 	intern->ce = fptr->common.scope;
 	if (closure_object) {
 		Z_ADDREF_P(closure_object);
@@ -2392,7 +2392,7 @@ ZEND_METHOD(reflection_parameter, getDeclaringFunction)
 /* }}} */
 
 /* {{{ proto public ReflectionClass|NULL ReflectionParameter::getDeclaringClass()
-   Returns in which class this parameter is defined (not the typehint of the parameter) */
+   Returns in which class this parameter is defined (not the type of the parameter) */
 ZEND_METHOD(reflection_parameter, getDeclaringClass)
 {
 	reflection_object *intern;
@@ -2484,9 +2484,9 @@ ZEND_METHOD(reflection_parameter, getClass)
 }
 /* }}} */
 
-/* {{{ proto public bool ReflectionParameter::hasTypeHint()
+/* {{{ proto public bool ReflectionParameter::hasType()
    Rethern whether parameter has a type hint */
-ZEND_METHOD(reflection_parameter, hasTypeHint)
+ZEND_METHOD(reflection_parameter, hasType)
 {
 	reflection_object *intern;
 	parameter_reference *param;
@@ -2502,9 +2502,9 @@ ZEND_METHOD(reflection_parameter, hasTypeHint)
 }
 /* }}} */
 
-/* {{{ proto public string ReflectionParameter::getTypeHint()
-   Returns the typehint associated with the parameter */
-ZEND_METHOD(reflection_parameter, getTypeHint)
+/* {{{ proto public string ReflectionParameter::getType()
+   Returns the type associated with the parameter */
+ZEND_METHOD(reflection_parameter, getType)
 {
 	reflection_object *intern;
 	parameter_reference *param;
@@ -2520,7 +2520,7 @@ ZEND_METHOD(reflection_parameter, getTypeHint)
 	{
 		RETURN_NULL();
 	}
-	reflection_typehint_factory(param->fptr, Z_ISUNDEF(intern->obj)? NULL : &intern->obj, param->arg_info, return_value);
+	reflection_type_factory(param->fptr, Z_ISUNDEF(intern->obj)? NULL : &intern->obj, param->arg_info, return_value);
 }
 /* }}} */
 
@@ -2761,44 +2761,12 @@ ZEND_METHOD(reflection_parameter, isVariadic)
 }
 /* }}} */
 
-/* {{{ proto public bool ReflectionTypeHint::isArray()
-   Returns whether parameter MUST be an array */
-ZEND_METHOD(reflection_typehint, isArray)
-{
-	reflection_object *intern;
-	typehint_reference *param;
-
-	if (zend_parse_parameters_none() == FAILURE) {
-		return;
-	}
-	GET_REFLECTION_OBJECT_PTR(param);
-
-	RETVAL_BOOL(param->arg_info->type_hint == IS_ARRAY);
-}
-/* }}} */
-
-/* {{{ proto public bool ReflectionTypeHint::isCallable()
-   Returns whether parameter MUST be callable */
-ZEND_METHOD(reflection_typehint, isCallable)
-{
-	reflection_object *intern;
-	typehint_reference *param;
-
-	if (zend_parse_parameters_none() == FAILURE) {
-		return;
-	}
-	GET_REFLECTION_OBJECT_PTR(param);
-
-	RETVAL_BOOL(param->arg_info->type_hint == IS_CALLABLE);
-}
-/* }}} */
-
-/* {{{ proto public bool ReflectionTypeHint::isNullable()
+/* {{{ proto public bool ReflectionType::allowsNull()
   Returns whether parameter MAY be null */
-ZEND_METHOD(reflection_typehint, isNullable)
+ZEND_METHOD(reflection_type, allowsNull)
 {
 	reflection_object *intern;
-	typehint_reference *param;
+	type_reference *param;
 
 	if (zend_parse_parameters_none() == FAILURE) {
 		return;
@@ -2809,12 +2777,12 @@ ZEND_METHOD(reflection_typehint, isNullable)
 }
 /* }}} */
 
-/* {{{ proto public bool ReflectionTypeHint::isInstance()
+/* {{{ proto public bool ReflectionType::isClassOrInterface()
   Returns whether parameter MUST be a class/interface instance */
-ZEND_METHOD(reflection_typehint, isInstance)
+ZEND_METHOD(reflection_type, isClassOrInterface)
 {
 	reflection_object *intern;
-	typehint_reference *param;
+	type_reference *param;
 
 	if (zend_parse_parameters_none() == FAILURE) {
 		return;
@@ -2825,31 +2793,12 @@ ZEND_METHOD(reflection_typehint, isInstance)
 }
 /* }}} */
 
-/* {{{ proto public bool ReflectionTypeHint::isScalar()
-  Returns whether parameter MUST be scalar */
-ZEND_METHOD(reflection_typehint, isScalar)
-{
-	reflection_object *intern;
-	typehint_reference *param;
-
-	if (zend_parse_parameters_none() == FAILURE) {
-		return;
-	}
-	GET_REFLECTION_OBJECT_PTR(param);
-
-	RETVAL_BOOL(param->arg_info->type_hint == IS_STRING ||
-		param->arg_info->type_hint == _IS_BOOL ||
-		param->arg_info->type_hint == IS_LONG ||
-		param->arg_info->type_hint == IS_DOUBLE);
-}
-/* }}} */
-
-/* {{{ proto public string ReflectionTypeHint::__toString()
+/* {{{ proto public string ReflectionType::__toString()
    Return the text of the type hint */
-ZEND_METHOD(reflection_typehint, __toString)
+ZEND_METHOD(reflection_type, __toString)
 {
 	reflection_object *intern;
-	typehint_reference *param;
+	type_reference *param;
 
 	if (zend_parse_parameters_none() == FAILURE) {
 		return;
@@ -3384,9 +3333,9 @@ ZEND_METHOD(reflection_function, getShortName)
 }
 /* }}} */
 
-/* {{{ proto public bool ReflectionFunctionAbstract:hasReturnTypeHint()
+/* {{{ proto public bool ReflectionFunctionAbstract:hasReturnType()
    Rethern whether the function has a return type hint */
-ZEND_METHOD(reflection_function, hasReturnTypeHint)
+ZEND_METHOD(reflection_function, hasReturnType)
 {
 	reflection_object *intern;
 	zend_function *fptr;
@@ -3401,9 +3350,9 @@ ZEND_METHOD(reflection_function, hasReturnTypeHint)
 }
 /* }}} */
 
-/* {{{ proto public string ReflectionFunctionAbstract::getReturnTypeHint()
-   Returns the return typehint associated with the function */
-ZEND_METHOD(reflection_function, getReturnTypeHint)
+/* {{{ proto public string ReflectionFunctionAbstract::getReturnType()
+   Returns the return type associated with the function */
+ZEND_METHOD(reflection_function, getReturnType)
 {
 	reflection_object *intern;
 	zend_function *fptr;
@@ -3419,7 +3368,7 @@ ZEND_METHOD(reflection_function, getReturnTypeHint)
 		RETURN_NULL();
 	}
 
-	reflection_typehint_factory(fptr, Z_ISUNDEF(intern->obj)? NULL : &intern->obj, &fptr->common.arg_info[-1], return_value);
+	reflection_type_factory(fptr, Z_ISUNDEF(intern->obj)? NULL : &intern->obj, &fptr->common.arg_info[-1], return_value);
 }
 /* }}} */
 
@@ -5983,8 +5932,8 @@ static const zend_function_entry reflection_function_abstract_functions[] = {
 	ZEND_ME(reflection_function, getStartLine, arginfo_reflection__void, 0)
 	ZEND_ME(reflection_function, getStaticVariables, arginfo_reflection__void, 0)
 	ZEND_ME(reflection_function, returnsReference, arginfo_reflection__void, 0)
-	ZEND_ME(reflection_function, hasReturnTypeHint, arginfo_reflection__void, 0)
-	ZEND_ME(reflection_function, getReturnTypeHint, arginfo_reflection__void, 0)
+	ZEND_ME(reflection_function, hasReturnType, arginfo_reflection__void, 0)
+	ZEND_ME(reflection_function, getReturnType, arginfo_reflection__void, 0)
 	PHP_FE_END
 };
 
@@ -6262,8 +6211,8 @@ static const zend_function_entry reflection_parameter_functions[] = {
 	ZEND_ME(reflection_parameter, getDeclaringFunction, arginfo_reflection__void, 0)
 	ZEND_ME(reflection_parameter, getDeclaringClass, arginfo_reflection__void, 0)
 	ZEND_ME(reflection_parameter, getClass, arginfo_reflection__void, 0)
-	ZEND_ME(reflection_parameter, hasTypeHint, arginfo_reflection__void, 0)
-	ZEND_ME(reflection_parameter, getTypeHint, arginfo_reflection__void, 0)
+	ZEND_ME(reflection_parameter, hasType, arginfo_reflection__void, 0)
+	ZEND_ME(reflection_parameter, getType, arginfo_reflection__void, 0)
 	ZEND_ME(reflection_parameter, isArray, arginfo_reflection__void, 0)
 	ZEND_ME(reflection_parameter, isCallable, arginfo_reflection__void, 0)
 	ZEND_ME(reflection_parameter, allowsNull, arginfo_reflection__void, 0)
@@ -6277,14 +6226,11 @@ static const zend_function_entry reflection_parameter_functions[] = {
 	PHP_FE_END
 };
 
-static const zend_function_entry reflection_typehint_functions[] = {
+static const zend_function_entry reflection_type_functions[] = {
 	ZEND_ME(reflection, __clone, arginfo_reflection__void, ZEND_ACC_PRIVATE|ZEND_ACC_FINAL)
-	ZEND_ME(reflection_typehint, isArray, arginfo_reflection__void, 0)
-	ZEND_ME(reflection_typehint, isCallable, arginfo_reflection__void, 0)
-	ZEND_ME(reflection_typehint, isNullable, arginfo_reflection__void, 0)
-	ZEND_ME(reflection_typehint, isInstance, arginfo_reflection__void, 0)
-	ZEND_ME(reflection_typehint, isScalar, arginfo_reflection__void, 0)
-	ZEND_ME(reflection_typehint, __toString, arginfo_reflection__void, 0)
+	ZEND_ME(reflection_type, allowsNull, arginfo_reflection__void, 0)
+	ZEND_ME(reflection_type, isClassOrInterface, arginfo_reflection__void, 0)
+	ZEND_ME(reflection_type, __toString, arginfo_reflection__void, 0)
 	PHP_FE_END
 };
 
@@ -6397,9 +6343,9 @@ PHP_MINIT_FUNCTION(reflection) /* {{{ */
 	zend_class_implements(reflection_parameter_ptr, 1, reflector_ptr);
 	zend_declare_property_string(reflection_parameter_ptr, "name", sizeof("name")-1, "", ZEND_ACC_PUBLIC);
 
-	INIT_CLASS_ENTRY(_reflection_entry, "ReflectionTypeHint", reflection_typehint_functions);
+	INIT_CLASS_ENTRY(_reflection_entry, "ReflectionType", reflection_type_functions);
 	_reflection_entry.create_object = reflection_objects_new;
-	reflection_typehint_ptr = zend_register_internal_class(&_reflection_entry);
+	reflection_type_ptr = zend_register_internal_class(&_reflection_entry);
 
 	INIT_CLASS_ENTRY(_reflection_entry, "ReflectionMethod", reflection_method_functions);
 	_reflection_entry.create_object = reflection_objects_new;

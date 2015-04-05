@@ -1,5 +1,5 @@
 --TEST--
-ReflectionParameter::hasTypeHint() / getTypeHint()
+ReflectionParameter::hasType() / getType()
 --FILE--
 <?php
 function foo(stdClass $a, array $b, callable $c, stdClass $d = null, $e = null, string $f, bool $g, int $h, float $i) { }
@@ -13,14 +13,11 @@ echo "*** function foo\n";
 $rf = new ReflectionFunction('foo');
 foreach ($rf->getParameters() as $idx => $rp) {
   echo "** Parameter $idx\n";
-  var_dump($rp->hasTypeHint());
-  $ra = $rp->getTypeHint();
+  var_dump($rp->hasType());
+  $ra = $rp->getType();
   if ($ra) {
-    var_dump($ra->isArray());
-    var_dump($ra->isCallable());
-    var_dump($ra->isNullable());
-    var_dump($ra->isInstance());
-    var_dump($ra->isScalar());
+    var_dump($ra->allowsNull());
+    var_dump($ra->isClassOrInterface());
     var_dump((string)$ra);
   }
 }
@@ -30,14 +27,11 @@ echo "\n*** method SplObserver::update\n";
 $rf = new ReflectionMethod('SplObserver', 'update');
 foreach ($rf->getParameters() as $idx => $rp) {
   echo "** Parameter $idx\n";
-  var_dump($rp->hasTypeHint());
-  $ra = $rp->getTypeHint();
+  var_dump($rp->hasType());
+  $ra = $rp->getType();
   if ($ra) {
-    var_dump($ra->isArray());
-    var_dump($ra->isCallable());
-    var_dump($ra->isNullable());
-    var_dump($ra->isInstance());
-    var_dump($ra->isScalar());
+    var_dump($ra->allowsNull());
+    var_dump($ra->isClassOrInterface());
     var_dump((string)$ra);
   }
 }
@@ -46,14 +40,11 @@ echo "\n*** return types\n";
 
 foreach (array($rf, new ReflectionFunction('bar'), new ReflectionMethod('c', 'bar')) as $idx => $rf) {
   echo "** Function/method return type $idx\n";
-  var_dump($rf->hasReturnTypeHint());
-  $ra = $rf->getReturnTypeHint();
+  var_dump($rf->hasReturnType());
+  $ra = $rf->getReturnType();
   if ($ra) {
-    var_dump($ra->isArray());
-    var_dump($ra->isCallable());
-    var_dump($ra->isNullable());
-    var_dump($ra->isInstance());
-    var_dump($ra->isScalar());
+    var_dump($ra->allowsNull());
+    var_dump($ra->isClassOrInterface());
     var_dump((string)$ra);
   }
 }
@@ -62,34 +53,22 @@ foreach (array($rf, new ReflectionFunction('bar'), new ReflectionMethod('c', 'ba
 ** Parameter 0
 bool(true)
 bool(false)
-bool(false)
-bool(false)
 bool(true)
-bool(false)
 string(8) "stdClass"
 ** Parameter 1
 bool(true)
-bool(true)
-bool(false)
-bool(false)
 bool(false)
 bool(false)
 string(5) "array"
 ** Parameter 2
 bool(true)
 bool(false)
-bool(true)
-bool(false)
-bool(false)
 bool(false)
 string(8) "callable"
 ** Parameter 3
 bool(true)
-bool(false)
-bool(false)
 bool(true)
 bool(true)
-bool(false)
 string(8) "stdClass"
 ** Parameter 4
 bool(false)
@@ -97,43 +76,28 @@ bool(false)
 bool(true)
 bool(false)
 bool(false)
-bool(false)
-bool(false)
-bool(true)
 string(6) "string"
 ** Parameter 6
 bool(true)
 bool(false)
 bool(false)
-bool(false)
-bool(false)
-bool(true)
 string(4) "bool"
 ** Parameter 7
 bool(true)
 bool(false)
 bool(false)
-bool(false)
-bool(false)
-bool(true)
 string(3) "int"
 ** Parameter 8
 bool(true)
 bool(false)
 bool(false)
-bool(false)
-bool(false)
-bool(true)
 string(5) "float"
 
 *** method SplObserver::update
 ** Parameter 0
 bool(true)
 bool(false)
-bool(false)
-bool(false)
 bool(true)
-bool(false)
 string(10) "SplSubject"
 
 *** return types
@@ -142,16 +106,10 @@ bool(false)
 ** Function/method return type 1
 bool(true)
 bool(false)
-bool(false)
-bool(false)
 bool(true)
-bool(false)
 string(8) "stdClass"
 ** Function/method return type 2
 bool(true)
 bool(false)
 bool(false)
-bool(false)
-bool(false)
-bool(true)
 string(3) "int"
