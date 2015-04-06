@@ -2799,6 +2799,7 @@ ZEND_METHOD(reflection_type, __toString)
 {
 	reflection_object *intern;
 	type_reference *param;
+	zend_string *class_name;
 
 	if (zend_parse_parameters_none() == FAILURE) {
 		return;
@@ -2810,9 +2811,24 @@ ZEND_METHOD(reflection_type, __toString)
 		case IS_CALLABLE: RETURN_STRINGL("callable", sizeof("callable") - 1);
 		case IS_OBJECT:
 			if (param->fptr->type == ZEND_INTERNAL_FUNCTION) {
-				RETURN_STRING(((zend_internal_arg_info*)param->arg_info)->class_name);
+				const char *name = ((zend_internal_arg_info*)param->arg_info)->class_name;
+
+				class_name = zend_string_init(name, strlen(name), 0);
+			} else {
+				class_name = zend_string_copy(param->arg_info->class_name);
 			}
-			RETURN_STR(zend_string_copy(param->arg_info->class_name));
+
+			if (param->fptr->common.scope) {
+				if (zend_string_equals_literal_ci(class_name, "self")) {
+					zend_string_release(class_name);
+					class_name = zend_string_copy(param->fptr->common.scope->name);
+				} else if (zend_string_equals_literal_ci(class_name, "parent")) {
+					zend_string_release(class_name);
+					class_name = zend_string_copy(param->fptr->common.scope->parent->name);
+				}
+			}
+
+			RETURN_STR(class_name);
 		case IS_STRING:   RETURN_STRINGL("string", sizeof("string") - 1);
 		case _IS_BOOL:    RETURN_STRINGL("bool", sizeof("bool") - 1);
 		case IS_LONG:     RETURN_STRINGL("int", sizeof("int") - 1);

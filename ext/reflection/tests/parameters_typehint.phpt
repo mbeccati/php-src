@@ -8,8 +8,8 @@ function bar(): stdClass { return new stdClass; }
 
 class c extends stdClass {
   function bar(): int { return 1; }
-  function factory(): self { return new c; }
-  function pfactory(): parent { return new stdClass; }
+  function factory(): sElf { return new c; }
+  function pfactory(): pArent { return new stdClass; }
 }
 
 echo "*** function foo\n";
@@ -127,9 +127,9 @@ string(3) "int"
 bool(true)
 bool(false)
 bool(true)
-string(4) "self"
+string(1) "c"
 ** Function/method return type 4
 bool(true)
 bool(false)
 bool(true)
-string(6) "parent"
+string(8) "stdClass"
