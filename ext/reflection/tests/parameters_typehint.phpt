@@ -7,7 +7,8 @@ function foo(stdClass $a, array $b, callable $c, stdClass $d = null, $e = null, 
 function bar(): stdClass { return new stdClass; }
 
 class c extends stdClass {
-  function bar(): int { return 1; }
+  function bar(self $x): int { return 1; }
+  function pbar(parent $x): int { return 1; }
   function factory(): self { return new c; }
   function pfactory(): parent { return new stdClass; }
 }
@@ -26,24 +27,29 @@ foreach ($rf->getParameters() as $idx => $rp) {
   }
 }
 
-echo "\n*** method SplObserver::update\n";
+echo "\n*** methods\n";
 
-$rf = new ReflectionMethod('SplObserver', 'update');
-foreach ($rf->getParameters() as $idx => $rp) {
-  echo "** Parameter $idx\n";
-  var_dump($rp->hasType());
-  $ra = $rp->getType();
-  if ($ra) {
-    var_dump($ra->allowsNull());
-    var_dump($ra->isClassOrInterface());
-    var_dump((string)$ra);
+foreach ([
+  new ReflectionMethod('SplObserver', 'update'),
+  new ReflectionMethod('c', 'bar'),
+  new ReflectionMethod('c', 'pbar'),
+] as $idx => $rm) {
+  foreach ($rm->getParameters() as $idx2 => $rp) {
+    echo "** Method $idx - parameter $idx2\n";
+    var_dump($rp->hasType());
+    $ra = $rp->getType();
+    if ($ra) {
+      var_dump($ra->allowsNull());
+      var_dump($ra->isClassOrInterface());
+      var_dump((string)$ra);
+    }
   }
 }
 
 echo "\n*** return types\n";
 
 foreach ([
-  $rf,
+  new ReflectionMethod('SplObserver', 'update'),
   new ReflectionFunction('bar'),
   new ReflectionMethod('c', 'bar'),
   new ReflectionMethod('c', 'factory'),
@@ -103,12 +109,22 @@ bool(false)
 bool(false)
 string(5) "float"
 
-*** method SplObserver::update
-** Parameter 0
+*** methods
+** Method 0 - parameter 0
 bool(true)
 bool(false)
 bool(true)
 string(10) "SplSubject"
+** Method 1 - parameter 0
+bool(true)
+bool(false)
+bool(true)
+string(4) "self"
+** Method 2 - parameter 0
+bool(true)
+bool(false)
+bool(true)
+string(6) "parent"
 
 *** return types
 ** Function/method return type 0
