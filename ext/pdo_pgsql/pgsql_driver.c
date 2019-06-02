@@ -1182,6 +1182,9 @@ static int pdo_pgsql_handle_factory(pdo_dbh_t *dbh, zval *driver_options) /* {{{
 	zend_string *tmp_user, *tmp_pass;
 	zend_long connect_timeout = 30;
 
+	/* PostgreSQL has operators with "?", allow escaping */
+	dbh->escape_question_marks = 1;
+
 	H = pecalloc(1, sizeof(pdo_pgsql_db_handle), dbh->is_persistent);
 	dbh->driver_data = H;
 

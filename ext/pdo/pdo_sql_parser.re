@@ -104,7 +104,7 @@ PDO_API int pdo_parse_params(pdo_stmt_t *stmt, char *inquery, size_t inquery_len
 	/* phase 1: look for args */
 	while((t = scan(&s)) != PDO_PARSER_EOI) {
 		if (t == PDO_PARSER_BIND || t == PDO_PARSER_BIND_POS || t == PDO_PARSER_ESCAPED_QUESTION) {
-			if (t == PDO_PARSER_ESCAPED_QUESTION && stmt->supports_placeholders == PDO_PLACEHOLDER_POSITIONAL) {
+			if (t == PDO_PARSER_ESCAPED_QUESTION && !stmt->dbh->escape_question_marks) {
 				/* escaped question marks unsupported, treat as text */
 				continue;
 			}

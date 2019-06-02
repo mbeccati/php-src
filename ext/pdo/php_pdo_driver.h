@@ -44,7 +44,7 @@ PDO_API char *php_pdo_int64_to_str(pdo_int64_t i64);
 # define FALSE 0
 #endif
 
-#define PDO_DRIVER_API	20170320
+#define PDO_DRIVER_API	20190602
 
 enum pdo_param_type {
 	PDO_PARAM_NULL,
@@ -468,9 +468,12 @@ struct _pdo_dbh_t {
 	/* when set, convert int/floats to strings */
 	unsigned stringify:1;
 
+	/* when set, the driver allows question mark escaping in the parser */
+	unsigned escape_question_marks:1;
+
 	/* the sum of the number of bits here and the bit fields preceding should
 	 * equal 32 */
-	unsigned _reserved_flags:21;
+	unsigned _reserved_flags:20;
 
 	/* data source string used to open this handle */
 	const char *data_source;
