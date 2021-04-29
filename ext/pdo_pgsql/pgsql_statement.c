@@ -385,6 +385,9 @@ static int pgsql_stmt_param_hook(pdo_stmt_t *stmt, struct pdo_bound_param_data *
 						}
 					}
 
+					/* We will always send a zero param type, unless otherwise needed */
+					S->param_types[param->paramno] = 0;
+
 					if (PDO_PARAM_TYPE(param->param_type) == PDO_PARAM_NULL ||
 							Z_TYPE_P(parameter) == IS_NULL) {
 						S->param_values[param->paramno] = NULL;
@@ -398,22 +401,22 @@ static int pgsql_stmt_param_hook(pdo_stmt_t *stmt, struct pdo_bound_param_data *
 						S->param_values[param->paramno] = Z_STRVAL_P(parameter);
 						S->param_lengths[param->paramno] = Z_STRLEN_P(parameter);
 						S->param_formats[param->paramno] = 0;
+
+						if (PDO_PARAM_TYPE(param->param_type) == PDO_PARAM_INT) {
+							/* we need to check if the number requires bigints */
+							long long val = strtoll(Z_STRVAL_P(parameter), NULL, 10);
+
+							if (val > PG_INT32_MAX || val < PG_INT32_MIN) {
+								S->param_types[param->paramno] = INT8OID;
+							} else {
+								S->param_types[param->paramno] = INT4OID;
+							}
+						}
 					}
 
-					if (PDO_PARAM_TYPE(param->param_type) == PDO_PARAM_INT) {
-						/* we need to check if the number requires bigints */
-						long long val = strtoll(Z_STRVAL_P(parameter), NULL, 10);
-
-						if (val > PG_INT32_MAX || val < PG_INT32_MIN) {
-							S->param_types[param->paramno] = INT8OID;
-						} else {
-							S->param_types[param->paramno] = INT4OID;
-						}
-					} else if (PDO_PARAM_TYPE(param->param_type) == PDO_PARAM_LOB) {
+					if (PDO_PARAM_TYPE(param->param_type) == PDO_PARAM_LOB) {
 						S->param_types[param->paramno] = 0;
 						S->param_formats[param->paramno] = 1;
-					} else {
-						S->param_types[param->paramno] = 0;
 					}
 				}
 				break;
