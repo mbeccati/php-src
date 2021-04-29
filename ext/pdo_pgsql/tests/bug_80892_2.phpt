@@ -18,6 +18,7 @@ $db->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 $db->setAttribute(PDO::ATTR_STRINGIFY_FETCHES, false);
 
 $db->exec("CREATE TEMPORARY TABLE b80892 (a int, b smallint)");
+$db->exec("CREATE TEMPORARY TABLE b80892_2 (c bool)");
 
 $stmt = $db->prepare("INSERT INTO b80892 (a, b) VALUES (?, ?) RETURNING *");
 $stmt->bindValue(1, 1, PDO::PARAM_STR);
@@ -46,6 +47,16 @@ var_dump($stmt->fetch());
 $stmt = $db->prepare("INSERT INTO b80892 (a, b) VALUES (?, ?) RETURNING *");
 $stmt->bindValue(1, null, PDO::PARAM_INT);
 $stmt->bindValue(2, null, PDO::PARAM_INT);
+$stmt->execute();
+var_dump($stmt->fetch());
+
+$stmt = $db->prepare("INSERT INTO b80892_2 (c) VALUES (?) RETURNING *");
+$stmt->bindValue(1, 1, PDO::PARAM_INT);
+$stmt->execute();
+var_dump($stmt->fetch());
+
+$stmt = $db->prepare("INSERT INTO b80892_2 (c) VALUES (?) RETURNING *");
+$stmt->bindValue(1, 0, PDO::PARAM_INT);
 $stmt->execute();
 var_dump($stmt->fetch());
 
@@ -80,4 +91,12 @@ array(2) {
   NULL
   ["b"]=>
   NULL
+}
+array(1) {
+  ["c"]=>
+  bool(true)
+}
+array(1) {
+  ["c"]=>
+  bool(false)
 }
