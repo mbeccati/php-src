@@ -735,7 +735,8 @@ static const struct pdo_dbh_methods sqlite_methods = {
 	get_driver_methods,
 	pdo_sqlite_request_shutdown,
 	NULL, /* in transaction, use PDO's internal tracking mechanism */
-	pdo_sqlite_get_gc
+	pdo_sqlite_get_gc,
+    pdo_sqlite_scanner
 };
 
 static char *make_filename_safe(const char *filename)

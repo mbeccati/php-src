@@ -35,11 +35,7 @@
 #define YYMARKER        s->ptr
 #define YYFILL(n)		{ RET(PDO_PARSER_EOI); }
 
-typedef struct Scanner {
-	const char *ptr, *cur, *tok, *end;
-} Scanner;
-
-static int scan(Scanner *s)
+static int default_scanner(pdo_scanner_t *s)
 {
 	const char *cursor = s->cur;
 
@@ -47,18 +43,16 @@ static int scan(Scanner *s)
 	/*!re2c
 	BINDCHR		= [:][a-zA-Z0-9_]+;
 	QUESTION	= [?];
-	ESCQUESTION	= [?][?];
 	COMMENTS	= ("/*"([^*]+|[*]+[^/*])*[*]*"*/"|"--"[^\r\n]*);
-	SPECIALS	= [:?"'-/];
-	MULTICHAR	= [:]{2,};
+	SPECIALS	= [:?"'/-];
+	MULTICHAR	= ([:]{2,}|[?]{2,});
 	ANYNOEOF	= [\001-\377];
 	*/
 
 	/*!re2c
-		(["](([\\]ANYNOEOF)|ANYNOEOF\["\\])*["]) { RET(PDO_PARSER_TEXT); }
-		(['](([\\]ANYNOEOF)|ANYNOEOF\['\\])*[']) { RET(PDO_PARSER_TEXT); }
+		(["]((["]["])|ANYNOEOF\["])*["])		{ RET(PDO_PARSER_TEXT); }
+		(['](([']['])|ANYNOEOF\['])*['])		{ RET(PDO_PARSER_TEXT); }
 		MULTICHAR								{ RET(PDO_PARSER_TEXT); }
-		ESCQUESTION								{ RET(PDO_PARSER_ESCAPED_QUESTION); }
 		BINDCHR									{ RET(PDO_PARSER_BIND); }
 		QUESTION								{ RET(PDO_PARSER_BIND_POS); }
 		SPECIALS								{ SKIP_ONE(PDO_PARSER_TEXT); }
@@ -81,7 +75,7 @@ static void free_param_name(zval *el) {
 
 PDO_API int pdo_parse_params(pdo_stmt_t *stmt, zend_string *inquery, zend_string **outquery)
 {
-	Scanner s;
+	pdo_scanner_t s;
 	char *newbuffer;
 	ptrdiff_t t;
 	uint32_t bindno = 0;
@@ -91,6 +85,9 @@ PDO_API int pdo_parse_params(pdo_stmt_t *stmt, zend_string *inquery, zend_string
 	struct pdo_bound_param_data *param;
 	int query_type = PDO_PLACEHOLDER_NONE;
 	struct placeholder *placeholders = NULL, *placetail = NULL, *plc = NULL;
+	int (*scan)(pdo_scanner_t *s);
+
+	scan = stmt->dbh->methods->scanner ? stmt->dbh->methods->scanner : default_scanner;
 
 	s.cur = ZSTR_VAL(inquery);
 	s.end = s.cur + ZSTR_LEN(inquery) + 1;
